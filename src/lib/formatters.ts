@@ -46,6 +46,10 @@ export const ALL_CATEGORIES: Category[] = [
   "wellness",
 ];
 
+export function isValidCategory(value: string | undefined): value is Category {
+  return ALL_CATEGORIES.includes(value as Category);
+}
+
 export function partitionSpeakerEvents(
   events: EventListItem[],
   now = new Date()

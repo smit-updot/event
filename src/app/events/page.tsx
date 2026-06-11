@@ -8,6 +8,7 @@ import {
   EventsPageFiltersSkeleton,
   EventsPageGridSkeleton,
 } from "@/components/skeletons";
+import { isValidCategory } from "@/lib/formatters";
 import { parsePaginationParams } from "@/lib/pagination";
 import type { Category } from "@/lib/types";
 
@@ -23,17 +24,6 @@ interface EventsPageProps {
     offset?: string;
     limit?: string;
   }>;
-}
-
-function isValidCategory(value: string | undefined): value is Category {
-  return [
-    "concerts",
-    "business",
-    "technology",
-    "arts",
-    "gaming",
-    "wellness",
-  ].includes(value as Category);
 }
 
 async function EventsContent({

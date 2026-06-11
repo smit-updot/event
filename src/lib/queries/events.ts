@@ -72,20 +72,6 @@ const GET_EVENTS_PAGINATED_BY_CATEGORY = gql`
   }
 `;
 
-const GET_UPCOMING_EVENTS = gql`
-  ${EVENT_LIST_FIELDS}
-  query GetUpcomingEvents($now: DateTime!) {
-    events(
-      first: 3
-      orderBy: startDate_ASC
-      where: { startDate_gte: $now }
-      stage: PUBLISHED
-    ) {
-      ...EventListFields
-    }
-  }
-`;
-
 const GET_EVENT_BY_SLUG = gql`
   query GetEventBySlug($slug: String!) {
     event(where: { slug: $slug }, stage: PUBLISHED) {
@@ -95,8 +81,6 @@ const GET_EVENT_BY_SLUG = gql`
       shortDescription
       description {
         markdown
-        html
-        text
       }
       startDate
       endDate
@@ -111,10 +95,6 @@ const GET_EVENT_BY_SLUG = gql`
         name
         address
         mapUrl
-        location {
-          latitude
-          longitude
-        }
       }
       speakers {
         name
@@ -168,15 +148,6 @@ export async function getEventsPaginated(
     limit,
     offset,
   };
-}
-
-export async function getUpcomingEvents(): Promise<EventListItem[]> {
-  const client = getHygraphClient({ tags: ["events"] });
-  const data = await client.request<{ events: EventListItem[] }>(
-    GET_UPCOMING_EVENTS,
-    { now: new Date().toISOString() }
-  );
-  return data.events;
 }
 
 export async function getEventBySlug(slug: string): Promise<Event | null> {

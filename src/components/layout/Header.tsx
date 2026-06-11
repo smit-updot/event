@@ -13,13 +13,8 @@ import {
   SheetTitle,
   SheetClose,
 } from "@/components/ui/sheet";
+import { NAV_LINKS } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
-
-const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/events", label: "Events" },
-  { href: "/speakers", label: "Speakers" },
-];
 
 function NavLink({
   href,

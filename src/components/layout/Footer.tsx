@@ -1,11 +1,6 @@
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
-
-const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/events", label: "Events" },
-  { href: "/speakers", label: "Speakers" },
-];
+import { NAV_LINKS } from "@/lib/navigation";
 
 export function Footer() {
   return (

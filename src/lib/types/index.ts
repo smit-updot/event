@@ -19,10 +19,6 @@ export interface Venue {
   slug: string;
   address: string;
   mapUrl: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
 }
 
 export interface Speaker {
@@ -54,8 +50,6 @@ export interface Event {
   shortDescription: string;
   description: {
     markdown: string;
-    html: string;
-    text: string;
   };
   startDate: string;
   endDate: string;
