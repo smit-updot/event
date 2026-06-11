@@ -14,7 +14,7 @@ export function Footer() {
           {/* Brand */}
           <div className="flex flex-col gap-3">
             <span className="font-heading text-lg font-semibold tracking-wider uppercase">
-              Updot Events
+              Events
             </span>
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
               Discover curated events across music, technology, arts, and more.
@@ -41,7 +41,7 @@ export function Footer() {
         <Separator className="my-8" />
 
         <p className="text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} Updot Events. All rights reserved.
+          &copy; {new Date().getFullYear()} Events. All rights reserved.
         </p>
       </div>
     </footer>

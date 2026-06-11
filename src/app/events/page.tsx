@@ -3,7 +3,10 @@ import type { Metadata } from "next";
 import { getEvents } from "@/lib/queries/events";
 import { EventGrid } from "@/components/events/EventGrid";
 import { EventFilters } from "@/components/events/EventFilters";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  EventsPageFiltersSkeleton,
+  EventsPageGridSkeleton,
+} from "@/components/skeletons";
 import type { Category } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -27,22 +30,6 @@ function isValidCategory(value: string | undefined): value is Category {
   ].includes(value as Category);
 }
 
-function EventsGridSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex flex-col gap-3">
-          <Skeleton className="aspect-video w-full" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-6 w-3/4" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 async function EventsContent({ category }: { category?: Category }) {
   const events = await getEvents(category);
   return <EventGrid events={events} activeCategory={category} />;
@@ -54,7 +41,6 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      {/* Page header */}
       <div className="mb-10 flex flex-col gap-2 border-b border-border pb-8">
         <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
           Discover
@@ -67,15 +53,13 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
         </p>
       </div>
 
-      {/* Filters */}
       <div className="mb-8">
-        <Suspense fallback={<Skeleton className="h-9 w-full max-w-md" />}>
+        <Suspense fallback={<EventsPageFiltersSkeleton />}>
           <EventFilters activeCategory={activeCategory} />
         </Suspense>
       </div>
 
-      {/* Grid */}
-      <Suspense fallback={<EventsGridSkeleton />}>
+      <Suspense fallback={<EventsPageGridSkeleton />}>
         <EventsContent category={activeCategory} />
       </Suspense>
     </main>

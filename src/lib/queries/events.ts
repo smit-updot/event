@@ -71,6 +71,7 @@ const GET_EVENT_BY_SLUG = gql`
       slug
       shortDescription
       description {
+        markdown
         html
         text
       }

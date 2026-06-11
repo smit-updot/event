@@ -41,6 +41,7 @@ export interface Event {
   slug: string;
   shortDescription: string;
   description: {
+    markdown: string;
     html: string;
     text: string;
   };
