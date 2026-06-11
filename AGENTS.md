@@ -52,7 +52,8 @@ Do **not** add a separate Rich Text AST renderer — query `description { markdo
 | `src/components/ui/`       | **All** shadcn/Radix UI primitives — nothing else                   |
 | `src/components/events/`   | Event-specific composed components                                  |
 | `src/components/speakers/` | Speaker-specific composed components                                |
-| `src/components/layout/`   | Header, footer, nav, page shells                                    |
+| `src/components/layout/`   | Header, footer, nav, page shells, pagination                        |
+| `src/blocks/`              | CMS layout block components + `RenderBlocks` registry                 |
 | `src/components/skeletons/`| Route-level loading UI — colocate by domain (`events.tsx`, etc.)      |
 | `src/lib/`                 | **All** Hygraph access, GraphQL queries, types, formatters, helpers |
 | `src/lib/hygraph.ts`       | `getHygraphClient()` — `graphql-request` + native `fetch` caching     |
@@ -67,7 +68,7 @@ Do **not** add a separate Rich Text AST renderer — query `description { markdo
 
 | Route              | Purpose                               |
 | ------------------ | ------------------------------------- |
-| `/`                | Home — upcoming / highlighted events  |
+| `/`                | Home — CMS-driven `Page` layout blocks (`slug: home`) |
 | `/events`          | Events index (filterable by category) |
 | `/events/[slug]`   | Event detail                          |
 | `/speakers/[slug]` | Speaker profile + related events      |
@@ -122,7 +123,44 @@ Use the **High-Performance Content API** endpoint from Project Settings → API 
 | `mapUrl`   | Single line text | ✓        | External map link                                       |
 | `location` | Location         | ✓        | Lat/long coordinates from Hygraph                       |
 
-There is no separate `Tag` or `SiteSettings` model in this schema. Event filtering uses the `category` enumeration on `Event`.
+### Model: `Page`
+
+| API ID   | Field type | Required | Notes |
+| -------- | ---------- | -------- | ----- |
+| `name`   | Single line text | ✓ | Title field |
+| `slug`   | Slug | ✓ | Unique — home page uses `home` |
+| `layout` | Modular content (union) | ✓ | Ordered block list — render via `RenderBlocks` |
+
+**`layout` union members:** `Hero`, `FeaturedEvent`, `FeaturedSpeaker` — query with `__typename` inline fragments.
+
+### Component: `Hero`
+
+| API ID      | Field type | Required | Notes |
+| ----------- | ---------- | -------- | ----- |
+| `heroTitle` | Single line text | ✓ | Headline |
+| `heroImage` | Asset | ✓ | Hero image |
+| `cta`       | Component → `Cta` | ✓ | Call to action |
+
+### Component: `Cta`
+
+| API ID        | Field type | Required | Notes |
+| ------------- | ---------- | -------- | ----- |
+| `ctaLabel`    | Single line text | ✓ | Button label |
+| `redirectUrl` | Single line text | ✓ | Internal path or external URL |
+
+### Component: `FeaturedEvent`
+
+| API ID   | Field type | Required | Notes |
+| -------- | ---------- | -------- | ----- |
+| `events` | Reference → `Event` (many) | ✓ | Curated events for home |
+
+### Component: `FeaturedSpeaker`
+
+| API ID     | Field type | Required | Notes |
+| ---------- | ---------- | -------- | ----- |
+| `speakers` | Reference → `Speaker` (many) | ✓ | Curated speakers for home |
+
+There is no separate `Tag` or `SiteSettings` model in this schema. Event filtering uses the `category` enumeration on `Event`. Home content is authored on the `Page` model — not a standalone `SiteSettings` singleton.
 
 **`Category` enum values:** `concerts`, `business`, `technology`, `arts`, `gaming`, `wellness` — defined in `src/lib/types/index.ts` and `ALL_CATEGORIES` in `src/lib/formatters.ts`.
 
@@ -181,7 +219,7 @@ Keep the site shell in `components/layout/`; do not duplicate header/footer insi
 - Put every Hygraph query and client setup in `src/lib/` — pages call `lib/` functions, never Hygraph directly
 - Colocate GraphQL documents in `src/lib/queries/`
 - Map responses to TypeScript types in `src/lib/types/` — keep in sync with the schema above
-- Pass native `fetch` into `graphql-request` so Next.js caching and `revalidateTag` work
+- Pass native `fetch` into `graphql-request` — **default is `cache: 'no-store'`** (no Hygraph caching). Opt in via `getHygraphClient({ revalidate: N })` or `HYGRAPH_REVALIDATE` env for TTL + `revalidateTag` webhooks
 - Use granular cache tags per model and slug (`events`, `event-{slug}`, `speakers`, etc.)
 - Use `generateStaticParams` on `[slug]` routes
 - Use `generateMetadata` on every page for SEO
@@ -197,7 +235,8 @@ Keep the site shell in `components/layout/`; do not duplicate header/footer insi
 | Function | Purpose | Cache tags |
 | -------- | ------- | ---------- |
 | `getEvents(category?)` | Listing + filter | `events` |
-| `getUpcomingEvents()` | Home — next 3 by `startDate` | `events` |
+| `getPageBySlug(slug)` | Home (`slug: home`) — `layout` blocks | `pages`, `page-{slug}` |
+| `getUpcomingEvents()` | Optional — next 3 events by `startDate` | `events` |
 | `getEventBySlug(slug)` | Detail page | `events`, `event-{slug}` |
 | `getAllEventSlugs()` | `generateStaticParams` | `events` |
 
@@ -218,7 +257,7 @@ Keep the site shell in `components/layout/`; do not duplicate header/footer insi
 ## Component architecture — do
 
 - Keep `components/ui/` free of business logic and Hygraph types
-- Build page UI from composed components in `components/events/`, `components/speakers/`, `components/layout/`
+- Build page UI from composed components in `components/events/`, `components/speakers/`, `components/layout/`; CMS blocks live in `blocks/`
 - Keep `app/` route files thin: fetch → pass props → render
 - Use `"use client"` only for interactive UI (mobile nav, tabs, filters) — parent Server Component owns data
 - Use `notFound()` when a slug does not resolve

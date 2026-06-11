@@ -18,7 +18,6 @@ export function getHygraphClient(options?: {
         ...init,
         next: {
           tags: options?.tags,
-          revalidate: options?.revalidate ?? 3600,
         },
       }),
   });

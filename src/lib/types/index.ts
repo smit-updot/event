@@ -77,3 +77,39 @@ export interface EventListItem {
   venue?: Pick<Venue, "name">;
   speakers: Pick<Speaker, "name" | "slug">[];
 }
+
+export interface Cta {
+  ctaLabel: string;
+  redirectUrl: string;
+}
+
+export interface HeroBlock {
+  __typename: "Hero";
+  id: string;
+  heroTitle: string;
+  heroImage: Asset;
+  cta: Cta;
+}
+
+export interface FeaturedEventBlock {
+  __typename: "FeaturedEvent";
+  id: string;
+  events: EventListItem[];
+}
+
+export interface FeaturedSpeakerBlock {
+  __typename: "FeaturedSpeaker";
+  id: string;
+  speakers: SpeakerListItem[];
+}
+
+export type PageLayoutBlock =
+  | HeroBlock
+  | FeaturedEventBlock
+  | FeaturedSpeakerBlock;
+
+export interface Page {
+  name: string;
+  slug: string;
+  layout: PageLayoutBlock[];
+}
