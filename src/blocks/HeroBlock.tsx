@@ -41,12 +41,12 @@ export function HeroBlock({ block }: HeroBlockProps) {
           )}
         </div>
 
-        <div className="relative aspect-square w-full overflow-hidden bg-muted lg:aspect-[4/3]">
+        <div className="relative aspect-square w-full overflow-hidden bg-transparent lg:aspect-[4/3]">
           <Image
             src={heroImage.url}
             alt={heroImage.fileName}
             fill
-            className="object-cover"
+            className="object-contain"
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority
           />
