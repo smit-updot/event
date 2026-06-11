@@ -3,9 +3,11 @@
 ## Next.js version notice
 
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
 <!-- END:nextjs-agent-rules -->
 
 This project runs **Next.js 16** (App Router) and **React 19**. Always read `node_modules/next/dist/docs/` before using any Next.js API.
@@ -22,16 +24,16 @@ Primary goals: list and detail events, profile speakers, link events ↔ speaker
 
 ## Installed packages — use these
 
-| Package | Use for |
-|---------|---------|
-| `graphql` | GraphQL core; required by `graphql-request` |
-| `graphql-request` | All Hygraph Content API queries — configure in `lib/` only |
-| `date-fns` | Formatting `startDate` / `endDate` on events |
-| `clsx` + `tailwind-merge` | Class merging via `cn()` in `lib/utils.ts` |
-| `class-variance-authority` | Component variants in `components/ui/` |
-| `lucide-react` | Icons across the UI |
-| `radix-ui` | Underlying primitives for shadcn components |
-| `next` / `react` / `react-dom` | Framework and rendering |
+| Package                        | Use for                                                    |
+| ------------------------------ | ---------------------------------------------------------- |
+| `graphql`                      | GraphQL core; required by `graphql-request`                |
+| `graphql-request`              | All Hygraph Content API queries — configure in `lib/` only |
+| `date-fns`                     | Formatting `startDate` / `endDate` on events               |
+| `clsx` + `tailwind-merge`      | Class merging via `cn()` in `lib/utils.ts`                 |
+| `class-variance-authority`     | Component variants in `components/ui/`                     |
+| `lucide-react`                 | Icons across the UI                                        |
+| `radix-ui`                     | Underlying primitives for shadcn components                |
+| `next` / `react` / `react-dom` | Framework and rendering                                    |
 
 Do **not** add Apollo Client, URQL, or other GraphQL clients — `graphql-request` is the standard for this project.
 
@@ -41,28 +43,28 @@ Do **not** add Apollo Client, URQL, or other GraphQL clients — `graphql-reques
 
 ## Directory conventions
 
-| Path | Purpose |
-|------|---------|
-| `src/app/` | Routes only — thin pages, metadata, static params |
-| `src/app/events/` | Events listing |
-| `src/app/events/[slug]/` | Single event detail |
-| `src/app/speakers/[slug]/` | Single speaker profile |
-| `src/components/ui/` | **All** shadcn/Radix UI primitives — nothing else |
-| `src/components/events/` | Event-specific composed components |
-| `src/components/speakers/` | Speaker-specific composed components |
-| `src/components/layout/` | Header, footer, nav, page shells |
-| `src/lib/` | **All** Hygraph access, GraphQL queries, types, formatters, helpers |
+| Path                       | Purpose                                                             |
+| -------------------------- | ------------------------------------------------------------------- |
+| `src/app/`                 | Routes only — thin pages, metadata, static params                   |
+| `src/app/events/`          | Events listing                                                      |
+| `src/app/events/[slug]/`   | Single event detail                                                 |
+| `src/app/speakers/[slug]/` | Single speaker profile                                              |
+| `src/components/ui/`       | **All** shadcn/Radix UI primitives — nothing else                   |
+| `src/components/events/`   | Event-specific composed components                                  |
+| `src/components/speakers/` | Speaker-specific composed components                                |
+| `src/components/layout/`   | Header, footer, nav, page shells                                    |
+| `src/lib/`                 | **All** Hygraph access, GraphQL queries, types, formatters, helpers |
 
 ---
 
 ## Routes
 
-| Route | Purpose |
-|-------|---------|
-| `/` | Home — upcoming / highlighted events |
-| `/events` | Events index (filterable by category) |
-| `/events/[slug]` | Event detail |
-| `/speakers/[slug]` | Speaker profile + related events |
+| Route              | Purpose                               |
+| ------------------ | ------------------------------------- |
+| `/`                | Home — upcoming / highlighted events  |
+| `/events`          | Events index (filterable by category) |
+| `/events/[slug]`   | Event detail                          |
+| `/speakers/[slug]` | Speaker profile + related events      |
 
 Slug fields in Hygraph map directly to `[slug]` route params.
 
@@ -78,41 +80,41 @@ Use the **High-Performance Content API** endpoint from Project Settings → API 
 
 ### Model: `Event`
 
-| API ID | Field type | Required | Notes |
-|--------|------------|----------|-------|
-| `eventName` | Single line text | ✓ | Title field |
-| `slug` | Slug | ✓ | Unique → `/events/[slug]` |
-| `shortDescription` | Multi line text | ✓ | Cards, SEO excerpt |
-| `description` | Rich text | ✓ | Full event body |
-| `bannerImage` | Asset | ✓ | Hero / card image |
-| `startDate` | Date & time | ✓ | |
-| `endDate` | Date & time | ✓ | |
-| `category` | Enumeration | ✓ | Filter events by category |
-| `venue` | Reference → `Venue` | | One-way reference |
-| `speakers` | Reference → `Speaker` (many) | | Two-way reference |
+| API ID             | Field type                   | Required | Notes                     |
+| ------------------ | ---------------------------- | -------- | ------------------------- |
+| `eventName`        | Single line text             | ✓        | Title field               |
+| `slug`             | Slug                         | ✓        | Unique → `/events/[slug]` |
+| `shortDescription` | Multi line text              | ✓        | Cards, SEO excerpt        |
+| `description`      | Rich text                    | ✓        | Full event body           |
+| `bannerImage`      | Asset                        | ✓        | Hero / card image         |
+| `startDate`        | Date & time                  | ✓        |                           |
+| `endDate`          | Date & time                  | ✓        |                           |
+| `category`         | Enumeration                  | ✓        | Filter events by category |
+| `venue`            | Reference → `Venue`          |          | One-way reference         |
+| `speakers`         | Reference → `Speaker` (many) |          | Two-way reference         |
 
 ### Model: `Speaker`
 
-| API ID | Field type | Required | Notes |
-|--------|------------|----------|-------|
-| `name` | Single line text | ✓ | Title field |
-| `slug` | Slug | ✓ | Unique → `/speakers/[slug]` |
-| `profilePhoto` | Asset | ✓ | Headshot |
-| `bio` | Markdown | ✓ | Render as Markdown on the frontend |
-| `instagram` | Single line text | | Optional social link |
-| `twitter` | Single line text | | Optional social link |
-| `linkedin` | Single line text | | Optional social link |
-| `events` | Reference → `Event` (many) | | Two-way reference (reverse of `Event.speakers`) |
+| API ID         | Field type                 | Required | Notes                                           |
+| -------------- | -------------------------- | -------- | ----------------------------------------------- |
+| `name`         | Single line text           | ✓        | Title field                                     |
+| `slug`         | Slug                       | ✓        | Unique → `/speakers/[slug]`                     |
+| `profilePhoto` | Asset                      | ✓        | Headshot                                        |
+| `bio`          | Markdown                   | ✓        | Render as Markdown on the frontend              |
+| `instagram`    | Single line text           |          | Optional social link                            |
+| `twitter`      | Single line text           |          | Optional social link                            |
+| `linkedin`     | Single line text           |          | Optional social link                            |
+| `events`       | Reference → `Event` (many) |          | Two-way reference (reverse of `Event.speakers`) |
 
 ### Model: `Venue`
 
-| API ID | Field type | Required | Notes |
-|--------|------------|----------|-------|
-| `name` | Single line text | ✓ | Title field |
-| `slug` | Slug | ✓ | Unique (embedded on event pages, not a top-level route) |
-| `address` | Multi line text | ✓ | |
-| `mapUrl` | Single line text | ✓ | External map link |
-| `location` | Location | ✓ | Lat/long coordinates from Hygraph |
+| API ID     | Field type       | Required | Notes                                                   |
+| ---------- | ---------------- | -------- | ------------------------------------------------------- |
+| `name`     | Single line text | ✓        | Title field                                             |
+| `slug`     | Slug             | ✓        | Unique (embedded on event pages, not a top-level route) |
+| `address`  | Multi line text  | ✓        |                                                         |
+| `mapUrl`   | Single line text | ✓        | External map link                                       |
+| `location` | Location         | ✓        | Lat/long coordinates from Hygraph                       |
 
 There is no separate `Tag` or `SiteSettings` model in this schema. Event filtering uses the `category` enumeration on `Event`.
 
@@ -120,11 +122,20 @@ There is no separate `Tag` or `SiteSettings` model in this schema. Event filteri
 
 ## Environment variables
 
-| Variable | Scope | Purpose |
-|----------|-------|---------|
-| `HYGRAPH_ENDPOINT` | Server only | High-Performance Content API URL |
-| `HYGRAPH_TOKEN` | Server only | Permanent Auth Token — never `NEXT_PUBLIC_` |
-| `REVALIDATE_SECRET` | Server only | Secures on-demand revalidation webhook |
+Copy [`.env.example`](.env.example) to `.env.local` (or `.env`) and fill in values. **Never commit real secrets.**
+
+| Variable            | Required | Scope       | Purpose |
+| ------------------- | -------- | ----------- | ------- |
+| `HYGRAPH_ENDPOINT`  | Yes      | Server only | High-Performance Content API URL from Hygraph → **Project Settings → API Access** |
+| `HYGRAPH_TOKEN`     | No       | Server only | Permanent Auth Token — only when the Content API is **not** public. Leave unset or empty for open APIs. Never `NEXT_PUBLIC_` |
+| `REVALIDATE_SECRET` | No       | Server only | Secures on-demand revalidation webhook (needed when the webhook route is added) |
+
+### Setup notes
+
+- **Public/open Content API** — set only `HYGRAPH_ENDPOINT`. Do **not** set `HYGRAPH_TOKEN`; sending a missing, wrong, or malformed token causes **401/403** responses even when the API is otherwise open.
+- **Protected Content API** — set `HYGRAPH_TOKEN` to a valid **Permanent Auth Token** from the same API Access screen (full JWT, three dot-separated segments).
+- One variable per line in `.env` / `.env.local` (do not concatenate multiple vars on one line).
+- `src/lib/hygraph.ts` reads env at request time and only attaches `Authorization` when a valid token is present.
 
 ---
 
@@ -136,7 +147,7 @@ There is no separate `Tag` or `SiteSettings` model in this schema. Event filteri
 - Mobile-first and fully responsive across all breakpoints
 - Compose all UI from `src/components/ui/` — add new primitives via `pnpm dlx shadcn@latest add <component>`
 - Use `Card`, `Badge`, `Button`, `Avatar`, `Breadcrumb`, `Tabs`, `Separator`, `Skeleton` where appropriate
-- Images: always `next/image` with `altText` from Hygraph assets and proper `sizes`
+- Images: always `next/image` with `fileName` as alt text (Hygraph `Asset` has no `altText` field) and proper `sizes`
 
 ---
 
@@ -164,7 +175,7 @@ There is no separate `Tag` or `SiteSettings` model in this schema. Event filteri
 - Don't put GraphQL strings or `graphql-request` calls inside `app/` route files
 - Don't expose `HYGRAPH_TOKEN` or the endpoint token to the client
 - Don't use a GraphQL client other than `graphql-request` without explicit approval
-- Don't skip `altText` on images
+- Don't skip alt text on images (use Hygraph `Asset.fileName` when no dedicated alt field exists)
 - Don't invent fields that aren't in the Hygraph schema
 - Don't add `status`, `isFeatured`, `registrationUrl`, or `Tag` fields — they are not in the schema
 
@@ -195,16 +206,6 @@ There is no separate `Tag` or `SiteSettings` model in this schema. Event filteri
 - **Speaker `bio`** — Markdown string; render via a Markdown helper in `lib/` (add a renderer package when implementing)
 - **Event `category`** — Enumeration; use for filters and badges on the events listing
 - **Venue `location`** — Hygraph Location field (latitude/longitude); pair with `mapUrl` for display
-
----
-
-## SEO — do
-
-- Export `metadata` or `generateMetadata` on every route
-- Use `eventName`, `shortDescription`, and `bannerImage` for event OG metadata
-- Use `name`, `bio`, and `profilePhoto` for speaker OG metadata
-- Generate `sitemap.ts` and `robots.ts` from Hygraph slugs
-- Use semantic HTML (`article`, `time`, `address`)
 
 ---
 
