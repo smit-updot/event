@@ -32,7 +32,8 @@ export function EventFilters({ activeCategory }: EventFiltersProps) {
         onClick={() => handleFilter(null)}
         className={cn(
           "transition-colors",
-          !activeCategory && "bg-primary text-primary-foreground hover:bg-primary/80 border-transparent"
+          !activeCategory &&
+            "bg-primary text-primary-foreground hover:bg-primary/80 border-transparent hover:text-primary-foreground",
         )}
       >
         All
@@ -47,7 +48,7 @@ export function EventFilters({ activeCategory }: EventFiltersProps) {
           className={cn(
             "transition-colors",
             activeCategory === category &&
-              "bg-primary text-primary-foreground hover:bg-primary/80 border-transparent"
+              "bg-primary text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground border-transparent",
           )}
         >
           {formatCategory(category)}

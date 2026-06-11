@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/events", label: "Events" },
+  { href: "/speakers", label: "Speakers" },
 ];
 
 function NavLink({

@@ -24,22 +24,24 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
+  const eventHref = `/events/${event.slug}`;
+  const visibleSpeakers = event.speakers.slice(0, 3);
+  const hiddenSpeakerCount = event.speakers.length - visibleSpeakers.length;
+
   return (
-    <Link
-      href={`/events/${event.slug}`}
-      className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-    >
-      <Card className="h-full transition-shadow duration-200 group-hover:shadow-md pt-0!">
-        {/* Banner image */}
+    <Card className="group/card h-full pt-0! transition-shadow duration-200 hover:shadow-md">
+      <Link
+        href={eventHref}
+        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
         <div className="relative aspect-video w-full overflow-hidden bg-muted">
           <Image
             src={event.bannerImage.url}
             alt={event.bannerImage.fileName}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-300 group-hover/card:scale-105"
           />
-          {/* Date badge overlay */}
           <div className="absolute top-3 left-3 flex flex-col items-center justify-center bg-background px-2.5 py-1.5 text-center shadow-sm">
             <span className="text-[0.5rem] font-semibold tracking-widest text-muted-foreground uppercase">
               {formatEventMonth(event.startDate)}
@@ -51,7 +53,7 @@ export function EventCard({ event }: EventCardProps) {
         </div>
 
         <CardHeader>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-4">
             <Badge variant="secondary" className="text-muted-foreground">
               {formatCategory(event.category)}
             </Badge>
@@ -79,26 +81,32 @@ export function EventCard({ event }: EventCardProps) {
             )}
           </div>
         </CardContent>
+      </Link>
 
-        {event.speakers.length > 0 && (
-          <>
-            <Separator />
-            <CardFooter className="pt-4">
-              <p className="text-xs text-muted-foreground">
-                <span className="font-semibold tracking-wider uppercase">
-                  With
-                </span>{" "}
-                {event.speakers
-                  .slice(0, 3)
-                  .map((s) => s.name)
-                  .join(", ")}
-                {event.speakers.length > 3 &&
-                  ` +${event.speakers.length - 3} more`}
-              </p>
-            </CardFooter>
-          </>
-        )}
-      </Card>
-    </Link>
+      {event.speakers.length > 0 && (
+        <>
+          <Separator />
+          <CardFooter className="pt-4">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-semibold tracking-wider uppercase">
+                With
+              </span>{" "}
+              {visibleSpeakers.map((speaker, index) => (
+                <span key={speaker.slug}>
+                  {index > 0 && ", "}
+                  <Link
+                    href={`/speakers/${speaker.slug}`}
+                    className="font-medium text-foreground underline-offset-4 transition-colors hover:text-foreground/70 hover:underline"
+                  >
+                    {speaker.name}
+                  </Link>
+                </span>
+              ))}
+              {hiddenSpeakerCount > 0 && ` +${hiddenSpeakerCount} more`}
+            </p>
+          </CardFooter>
+        </>
+      )}
+    </Card>
   );
 }

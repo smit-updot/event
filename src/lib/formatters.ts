@@ -1,5 +1,5 @@
 import { format, isSameDay } from "date-fns";
-import type { Category } from "@/lib/types";
+import type { Category, EventListItem } from "@/lib/types";
 
 export function formatEventDate(startDate: string, endDate: string): string {
   const start = new Date(startDate);
@@ -45,3 +45,51 @@ export const ALL_CATEGORIES: Category[] = [
   "gaming",
   "wellness",
 ];
+
+export function partitionSpeakerEvents(
+  events: EventListItem[],
+  now = new Date()
+) {
+  const nowTime = now.getTime();
+  const upcoming: EventListItem[] = [];
+  const past: EventListItem[] = [];
+
+  for (const event of events) {
+    if (new Date(event.endDate).getTime() >= nowTime) {
+      upcoming.push(event);
+    } else {
+      past.push(event);
+    }
+  }
+
+  upcoming.sort(
+    (a, b) =>
+      new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+  );
+  past.sort(
+    (a, b) =>
+      new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+  );
+
+  return { upcoming, past };
+}
+
+export function formatSocialUrl(
+  platform: "instagram" | "twitter" | "linkedin",
+  value: string
+): string {
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  const handle = value.replace(/^@/, "");
+
+  switch (platform) {
+    case "instagram":
+      return `https://instagram.com/${handle}`;
+    case "twitter":
+      return `https://x.com/${handle}`;
+    case "linkedin":
+      return `https://linkedin.com/in/${handle}`;
+  }
+}

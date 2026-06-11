@@ -33,11 +33,11 @@ Primary goals: list and detail events, profile speakers, link events ↔ speaker
 | `class-variance-authority`     | Component variants in `components/ui/`                     |
 | `lucide-react`                 | Icons across the UI                                        |
 | `radix-ui`                     | Underlying primitives for shadcn components                |
+| `react-markdown`               | Event `description` (via Hygraph `markdown`) and Speaker `bio` |
 | `next` / `react` / `react-dom` | Framework and rendering                                    |
 
 Do **not** add Apollo Client, URQL, or other GraphQL clients — `graphql-request` is the standard for this project.
-
-**Not yet installed** (add only when needed): a Markdown renderer for Speaker `bio` (e.g. `react-markdown`), a Rich Text renderer for Event `description` (e.g. Hygraph Rich Text AST helper). Prefer lightweight, server-compatible options.
+Do **not** add a separate Rich Text AST renderer — query `description { markdown }` from Hygraph and render with `react-markdown`.
 
 ---
 
@@ -53,7 +53,13 @@ Do **not** add Apollo Client, URQL, or other GraphQL clients — `graphql-reques
 | `src/components/events/`   | Event-specific composed components                                  |
 | `src/components/speakers/` | Speaker-specific composed components                                |
 | `src/components/layout/`   | Header, footer, nav, page shells                                    |
+| `src/components/skeletons/`| Route-level loading UI — colocate by domain (`events.tsx`, etc.)      |
 | `src/lib/`                 | **All** Hygraph access, GraphQL queries, types, formatters, helpers |
+| `src/lib/hygraph.ts`       | `getHygraphClient()` — `graphql-request` + native `fetch` caching     |
+| `src/lib/queries/`         | GraphQL documents and data-access functions per model                 |
+| `src/lib/types/`           | TypeScript types mirroring the Hygraph schema                         |
+| `src/lib/formatters.ts`    | `date-fns` date display + `Category` labels                           |
+| `src/lib/render-markdown.tsx` | `MarkdownContent` — shared `react-markdown` renderer               |
 
 ---
 
@@ -85,7 +91,7 @@ Use the **High-Performance Content API** endpoint from Project Settings → API 
 | `eventName`        | Single line text             | ✓        | Title field               |
 | `slug`             | Slug                         | ✓        | Unique → `/events/[slug]` |
 | `shortDescription` | Multi line text              | ✓        | Cards, SEO excerpt        |
-| `description`      | Rich text                    | ✓        | Full event body           |
+| `description`      | Rich text                    | ✓        | Full event body — query `markdown` on read |
 | `bannerImage`      | Asset                        | ✓        | Hero / card image         |
 | `startDate`        | Date & time                  | ✓        |                           |
 | `endDate`          | Date & time                  | ✓        |                           |
@@ -118,6 +124,12 @@ Use the **High-Performance Content API** endpoint from Project Settings → API 
 
 There is no separate `Tag` or `SiteSettings` model in this schema. Event filtering uses the `category` enumeration on `Event`.
 
+**`Category` enum values:** `concerts`, `business`, `technology`, `arts`, `gaming`, `wellness` — defined in `src/lib/types/index.ts` and `ALL_CATEGORIES` in `src/lib/formatters.ts`.
+
+**Rich text read shape:** Hygraph returns `description { markdown, html, text }` on read. Always query `markdown` and render via `MarkdownContent` — do not parse the Slate AST on the frontend.
+
+**Assets:** Hygraph `Asset` has `url`, `fileName`, `width`, `height` — no `altText` field.
+
 ---
 
 ## Environment variables
@@ -135,7 +147,19 @@ Copy [`.env.example`](.env.example) to `.env.local` (or `.env`) and fill in valu
 - **Public/open Content API** — set only `HYGRAPH_ENDPOINT`. Do **not** set `HYGRAPH_TOKEN`; sending a missing, wrong, or malformed token causes **401/403** responses even when the API is otherwise open.
 - **Protected Content API** — set `HYGRAPH_TOKEN` to a valid **Permanent Auth Token** from the same API Access screen (full JWT, three dot-separated segments).
 - One variable per line in `.env` / `.env.local` (do not concatenate multiple vars on one line).
-- `src/lib/hygraph.ts` reads env at request time and only attaches `Authorization` when a valid token is present.
+- `src/lib/hygraph.ts` reads `HYGRAPH_ENDPOINT` at module load. For protected APIs, attach `Authorization: Bearer …` in `getHygraphClient()` when `HYGRAPH_TOKEN` is set.
+
+---
+
+## Layout
+
+Root layout ([`src/app/layout.tsx`](src/app/layout.tsx)) wraps every page:
+
+- [`Header`](src/components/layout/Header.tsx) — sticky nav, desktop links, mobile `Sheet` menu (`"use client"`)
+- `{children}` in a `flex-1` column
+- [`Footer`](src/components/layout/Footer.tsx) — brand + nav links
+
+Keep the site shell in `components/layout/`; do not duplicate header/footer inside route pages.
 
 ---
 
@@ -166,6 +190,16 @@ Copy [`.env.example`](.env.example) to `.env.local` (or `.env`) and fill in valu
 - Request only the fields each page needs — avoid over-fetching
 - Query published content stage only
 - Handle on-demand revalidation via a secured webhook route when Hygraph content changes
+- **Next.js 16:** `params` and `searchParams` on pages are **Promises** — always `await` them before use
+
+### Query functions (events)
+
+| Function | Purpose | Cache tags |
+| -------- | ------- | ---------- |
+| `getEvents(category?)` | Listing + filter | `events` |
+| `getUpcomingEvents()` | Home — next 3 by `startDate` | `events` |
+| `getEventBySlug(slug)` | Detail page | `events`, `event-{slug}` |
+| `getAllEventSlugs()` | `generateStaticParams` | `events` |
 
 ---
 
@@ -189,6 +223,41 @@ Copy [`.env.example`](.env.example) to `.env.local` (or `.env`) and fill in valu
 - Use `"use client"` only for interactive UI (mobile nav, tabs, filters) — parent Server Component owns data
 - Use `notFound()` when a slug does not resolve
 
+### Events listing (`/events`)
+
+- **Filter via URL:** `?category=technology` — server-rendered, SEO-friendly; no client-side filter state
+- **`EventFilters`** (`"use client"`) — reads `useSearchParams()`, writes via `router.push`
+- **Page shell is static** — title and intro render immediately; only filters + grid are async
+- **`EventCard`** links to `/events/[slug]`; listing uses `EventGrid` for layout + empty state
+
+### Event detail (`/events/[slug]`)
+
+- Thin [`page.tsx`](src/app/events/[slug]/page.tsx): `generateStaticParams`, `generateMetadata`, shell `<article>`, Suspense boundary
+- Async child (`EventDetailContent`) fetches with `getEventBySlug` → renders [`EventDetail`](src/components/events/EventDetail.tsx)
+- `EventDetail` is presentational — receives a typed `Event` prop, no fetching
+
+### Speakers (not yet built)
+
+- Follow the same thin-page + composed component pattern as events
+- Reuse `MarkdownContent` for `bio`
+
+---
+
+## Loading & Suspense
+
+**Do not use route-level `loading.tsx`** for events routes. Use **inline `<Suspense>`** in `page.tsx` so static shells stream while data resolves.
+
+| Route | Static shell (immediate) | Suspense fallback |
+| ----- | ------------------------ | ----------------- |
+| `/events` | Page header (title, intro) | Filters skeleton + grid skeleton |
+| `/events/[slug]` | `<article>` wrapper | Breadcrumb (Home → Events) + content skeleton |
+
+All skeleton components live in **[`src/components/skeletons/`](src/components/skeletons/)** — one file per domain, barrel-exported from `index.ts`:
+
+- `events.tsx` — `EventsPageFiltersSkeleton`, `EventsPageGridSkeleton`, `EventSlugPageBreadcrumb`, `EventSlugPageContentSkeleton`
+
+Add new route skeletons to the matching domain file (e.g. `speakers.tsx`), not inline in `app/` pages.
+
 ---
 
 ## Component architecture — don't
@@ -197,24 +266,30 @@ Copy [`.env.example`](.env.example) to `.env.local` (or `.env`) and fill in valu
 - Don't add shadcn components outside `components/ui/`
 - Don't put Hygraph queries or types inside `components/`
 - Don't create client components just to avoid async Server Components
+- Don't define skeleton markup inline in `app/` pages — use `src/components/skeletons/`
+- Don't add `loading.tsx` when the page already uses granular inline `<Suspense>` boundaries
 
 ---
 
 ## Content rendering notes
 
-- **Event `description`** — Rich text from Hygraph; render via a dedicated helper in `lib/`
-- **Speaker `bio`** — Markdown string; render via a Markdown helper in `lib/` (add a renderer package when implementing)
-- **Event `category`** — Enumeration; use for filters and badges on the events listing
+- **Event `description`** — Query `description { markdown }`; render with [`MarkdownContent`](src/lib/render-markdown.tsx) (Server Component, `react-markdown`, editorial typography)
+- **Speaker `bio`** — Markdown string; reuse `MarkdownContent` from `lib/`
+- **Event `category`** — Enumeration; `formatCategory()` for labels, `ALL_CATEGORIES` for filter chips
 - **Venue `location`** — Hygraph Location field (latitude/longitude); pair with `mapUrl` for display
+- **Images** — `next/image` remote host `ap-south-1.graphassets.com` (see [`next.config.ts`](next.config.ts)); alt = `Asset.fileName`
 
 ---
 
 ## Agent checklist
 
 - [ ] Read relevant `node_modules/next/dist/docs/` before using Next.js APIs
+- [ ] `await params` / `await searchParams` on Next.js 16 pages
 - [ ] Hygraph field API IDs match the schema tables above
 - [ ] All data access goes through `src/lib/`
 - [ ] UI primitives from `@/components/ui/*` only
+- [ ] Skeletons in `src/components/skeletons/`, not inline in routes
+- [ ] Inline `<Suspense>` with static shell — no `loading.tsx` for events routes
 - [ ] Responsive on mobile through desktop
 - [ ] `generateMetadata` and `generateStaticParams` on dynamic routes
 - [ ] No secrets in client bundles

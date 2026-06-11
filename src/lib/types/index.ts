@@ -35,6 +35,18 @@ export interface Speaker {
   linkedin?: string;
 }
 
+export interface SpeakerListItem {
+  name: string;
+  slug: string;
+  bio: string;
+  profilePhoto: Asset;
+  events: { slug: string }[];
+}
+
+export interface SpeakerDetail extends Speaker {
+  events: EventListItem[];
+}
+
 export interface Event {
   id: string;
   eventName: string;
