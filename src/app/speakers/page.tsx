@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { getSpeakers } from "@/lib/queries/speakers";
+import { getSpeakersPaginated } from "@/lib/queries/speakers";
 import { SpeakerGrid } from "@/components/speakers/SpeakerGrid";
+import { Pagination } from "@/components/layout/Pagination";
 import { SpeakersPageGridSkeleton } from "@/components/skeletons";
+import { parsePaginationParams } from "@/lib/pagination";
 
 export const metadata: Metadata = {
   title: "Speakers — Events",
@@ -10,12 +12,42 @@ export const metadata: Metadata = {
     "Meet the speakers and experts presenting at our curated events.",
 };
 
-async function SpeakersContent() {
-  const speakers = await getSpeakers();
-  return <SpeakerGrid speakers={speakers} />;
+interface SpeakersPageProps {
+  searchParams: Promise<{
+    offset?: string;
+    limit?: string;
+  }>;
 }
 
-export default function SpeakersPage() {
+async function SpeakersContent({
+  limit,
+  offset,
+}: {
+  limit: number;
+  offset: number;
+}) {
+  const { items, total } = await getSpeakersPaginated(limit, offset);
+
+  return (
+    <>
+      <SpeakerGrid speakers={items} />
+      <Pagination
+        pathname="/speakers"
+        total={total}
+        limit={limit}
+        offset={offset}
+        searchParams={{ limit: String(limit) }}
+      />
+    </>
+  );
+}
+
+export default async function SpeakersPage({
+  searchParams,
+}: SpeakersPageProps) {
+  const params = await searchParams;
+  const { limit, offset } = parsePaginationParams(params);
+
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-10 flex flex-col gap-2 border-b border-border pb-8">
@@ -30,8 +62,11 @@ export default function SpeakersPage() {
         </p>
       </div>
 
-      <Suspense fallback={<SpeakersPageGridSkeleton />}>
-        <SpeakersContent />
+      <Suspense
+        key={`${offset}-${limit}`}
+        fallback={<SpeakersPageGridSkeleton />}
+      >
+        <SpeakersContent limit={limit} offset={offset} />
       </Suspense>
     </main>
   );

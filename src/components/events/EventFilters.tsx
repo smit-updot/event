@@ -21,6 +21,7 @@ export function EventFilters({ activeCategory }: EventFiltersProps) {
     } else {
       params.delete("category");
     }
+    params.delete("offset");
     router.push(`/events?${params.toString()}`);
   }
 

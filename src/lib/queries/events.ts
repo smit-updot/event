@@ -1,5 +1,6 @@
 import { gql } from "graphql-request";
 import { getHygraphClient } from "@/lib/hygraph";
+import type { PaginatedResult } from "@/lib/pagination";
 import type { Category, Event, EventListItem } from "@/lib/types";
 
 const EVENT_LIST_FIELDS = gql`
@@ -27,24 +28,46 @@ const EVENT_LIST_FIELDS = gql`
   }
 `;
 
-const GET_EVENTS = gql`
-  ${EVENT_LIST_FIELDS}
-  query GetEvents($category: Category) {
-    events(
-      orderBy: startDate_ASC
-      where: { category: $category }
-      stage: PUBLISHED
-    ) {
+const EVENTS_CONNECTION_FIELDS = gql`
+  aggregate {
+    count
+  }
+  edges {
+    node {
       ...EventListFields
     }
   }
 `;
 
-const GET_EVENTS_ALL = gql`
+const GET_EVENTS_PAGINATED = gql`
   ${EVENT_LIST_FIELDS}
-  query GetEventsAll {
-    events(orderBy: startDate_ASC, stage: PUBLISHED) {
-      ...EventListFields
+  query GetEventsPaginated($limit: Int!, $offset: Int!) {
+    eventsConnection(
+      first: $limit
+      skip: $offset
+      orderBy: startDate_ASC
+      stage: PUBLISHED
+    ) {
+      ${EVENTS_CONNECTION_FIELDS}
+    }
+  }
+`;
+
+const GET_EVENTS_PAGINATED_BY_CATEGORY = gql`
+  ${EVENT_LIST_FIELDS}
+  query GetEventsPaginatedByCategory(
+    $limit: Int!
+    $offset: Int!
+    $category: Category!
+  ) {
+    eventsConnection(
+      first: $limit
+      skip: $offset
+      orderBy: startDate_ASC
+      where: { category: $category }
+      stage: PUBLISHED
+    ) {
+      ${EVENTS_CONNECTION_FIELDS}
     }
   }
 `;
@@ -115,20 +138,36 @@ const GET_ALL_EVENT_SLUGS = gql`
   }
 `;
 
-export async function getEvents(category?: Category): Promise<EventListItem[]> {
+type EventsConnectionResponse = {
+  eventsConnection: {
+    aggregate: { count: number };
+    edges: { node: EventListItem }[];
+  };
+};
+
+export async function getEventsPaginated(
+  limit: number,
+  offset: number,
+  category?: Category
+): Promise<PaginatedResult<EventListItem>> {
   const client = getHygraphClient({ tags: ["events"] });
 
-  if (category) {
-    const data = await client.request<{ events: EventListItem[] }>(GET_EVENTS, {
-      category,
-    });
-    return data.events;
-  }
+  const data = category
+    ? await client.request<EventsConnectionResponse>(
+        GET_EVENTS_PAGINATED_BY_CATEGORY,
+        { limit, offset, category }
+      )
+    : await client.request<EventsConnectionResponse>(GET_EVENTS_PAGINATED, {
+        limit,
+        offset,
+      });
 
-  const data = await client.request<{ events: EventListItem[] }>(
-    GET_EVENTS_ALL
-  );
-  return data.events;
+  return {
+    items: data.eventsConnection.edges.map((edge) => edge.node),
+    total: data.eventsConnection.aggregate.count,
+    limit,
+    offset,
+  };
 }
 
 export async function getUpcomingEvents(): Promise<EventListItem[]> {

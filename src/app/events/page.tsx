@@ -1,12 +1,14 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { getEvents } from "@/lib/queries/events";
+import { getEventsPaginated } from "@/lib/queries/events";
 import { EventGrid } from "@/components/events/EventGrid";
 import { EventFilters } from "@/components/events/EventFilters";
+import { Pagination } from "@/components/layout/Pagination";
 import {
   EventsPageFiltersSkeleton,
   EventsPageGridSkeleton,
 } from "@/components/skeletons";
+import { parsePaginationParams } from "@/lib/pagination";
 import type { Category } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -16,7 +18,11 @@ export const metadata: Metadata = {
 };
 
 interface EventsPageProps {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    offset?: string;
+    limit?: string;
+  }>;
 }
 
 function isValidCategory(value: string | undefined): value is Category {
@@ -30,14 +36,40 @@ function isValidCategory(value: string | undefined): value is Category {
   ].includes(value as Category);
 }
 
-async function EventsContent({ category }: { category?: Category }) {
-  const events = await getEvents(category);
-  return <EventGrid events={events} activeCategory={category} />;
+async function EventsContent({
+  category,
+  limit,
+  offset,
+}: {
+  category?: Category;
+  limit: number;
+  offset: number;
+}) {
+  const { items, total } = await getEventsPaginated(limit, offset, category);
+
+  return (
+    <>
+      <EventGrid events={items} activeCategory={category} />
+      <Pagination
+        pathname="/events"
+        total={total}
+        limit={limit}
+        offset={offset}
+        searchParams={{
+          category,
+          limit: String(limit),
+        }}
+      />
+    </>
+  );
 }
 
 export default async function EventsPage({ searchParams }: EventsPageProps) {
-  const { category: rawCategory } = await searchParams;
-  const activeCategory = isValidCategory(rawCategory) ? rawCategory : undefined;
+  const params = await searchParams;
+  const activeCategory = isValidCategory(params.category)
+    ? params.category
+    : undefined;
+  const { limit, offset } = parsePaginationParams(params);
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -59,8 +91,15 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
         </Suspense>
       </div>
 
-      <Suspense fallback={<EventsPageGridSkeleton />}>
-        <EventsContent category={activeCategory} />
+      <Suspense
+        key={`${activeCategory ?? "all"}-${offset}-${limit}`}
+        fallback={<EventsPageGridSkeleton />}
+      >
+        <EventsContent
+          category={activeCategory}
+          limit={limit}
+          offset={offset}
+        />
       </Suspense>
     </main>
   );

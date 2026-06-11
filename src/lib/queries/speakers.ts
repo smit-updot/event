@@ -1,5 +1,6 @@
 import { gql } from "graphql-request";
 import { getHygraphClient } from "@/lib/hygraph";
+import type { PaginatedResult } from "@/lib/pagination";
 import type { SpeakerDetail, SpeakerListItem } from "@/lib/types";
 
 const SPEAKER_EVENT_FIELDS = gql`
@@ -58,31 +59,54 @@ const GET_ALL_SPEAKER_SLUGS = gql`
   }
 `;
 
-const GET_SPEAKERS = gql`
-  query GetSpeakers {
-    speakers(stage: PUBLISHED) {
-      name
-      slug
-      bio
-      profilePhoto {
-        url
-        fileName
-        width
-        height
+const GET_SPEAKERS_PAGINATED = gql`
+  query GetSpeakersPaginated($limit: Int!, $offset: Int!) {
+    speakersConnection(
+      first: $limit
+      skip: $offset
+      stage: PUBLISHED
+    ) {
+      aggregate {
+        count
       }
-      events {
-        slug
+      edges {
+        node {
+          name
+          slug
+          bio
+          profilePhoto {
+            url
+            fileName
+            width
+            height
+          }
+          events {
+            slug
+          }
+        }
       }
     }
   }
 `;
 
-export async function getSpeakers(): Promise<SpeakerListItem[]> {
+export async function getSpeakersPaginated(
+  limit: number,
+  offset: number
+): Promise<PaginatedResult<SpeakerListItem>> {
   const client = getHygraphClient({ tags: ["speakers"] });
-  const data = await client.request<{ speakers: SpeakerListItem[] }>(
-    GET_SPEAKERS
-  );
-  return data.speakers;
+  const data = await client.request<{
+    speakersConnection: {
+      aggregate: { count: number };
+      edges: { node: SpeakerListItem }[];
+    };
+  }>(GET_SPEAKERS_PAGINATED, { limit, offset });
+
+  return {
+    items: data.speakersConnection.edges.map((edge) => edge.node),
+    total: data.speakersConnection.aggregate.count,
+    limit,
+    offset,
+  };
 }
 
 export async function getSpeakerBySlug(
